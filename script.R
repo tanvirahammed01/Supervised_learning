@@ -49,6 +49,7 @@ samp = sample.int(n=nrow(estonia), size = floor(.7*nrow(estonia)), replace = F)
 train = estonia[samp,]
 test = estonia[-samp,]
 #undersampling and oversampling on this imbalanced data
+library(ROSE)
 data_balanced_both <- ovun.sample(Survived ~ ., data = train, method = "both", p=0.5, N=1000, seed = 1)$data
 #build logistic regression model
 lr.rose <- glm(Survived ~ ., data = data_balanced_both, family = binomial)
@@ -59,20 +60,32 @@ prediction = round(prediction, digits = 0)
 tab = table(test$Survived, prediction)
 sum(diag(tab))/sum(tab)
 #Confusion matrix
-#installed.packages('yardstic')
+#install.packages('yardstic')
 library(yardstick)
 library(ggplot2)
 truth_predicted <- data.frame(test$Survived, prediction)
 truth_predicted$prediction <- as.factor(truth_predicted$prediction)
+
+
+truth_predicted$test.Survived<- ifelse(truth_predicted$test.Survived == "Died", 0, 1)
+truth_predicted$test.Survived <- as.factor(truth_predicted$test.Survived)
+
 lrcm <- conf_mat(truth_predicted, test.Survived, prediction )
 autoplot(lrcm, type = "heatmap")
 #odds ratio
 exp(coef(lr.rose))
+install.packages('sjPlot')
 library(sjPlot)
-plot_model(lr.rose, show.values = TRUE, title = "")KNN
+plot_model(lr.rose, show.values = TRUE, title = "")
+
+
+#KNN
 library(class)
 rm(list=ls())
-setwd("D:\\M2\\Mining\\Project\\archive")
+
+
+
+#setwd("D:\\M2\\Mining\\Project\\archive")
 estonia <- read.csv("estonia-passenger-list.csv", header= T)
 #Data Management
 estonia$Country= ifelse(estonia$Country == "Sweden", 0, ifelse(estonia$Country == "Estonia", 1, 2))
@@ -110,15 +123,17 @@ sum(diag(tab))/sum(tab)#Confusion matrix
 truth_predicted <- data.frame(test$Survived, knn.27)
 knncm <- conf_mat(truth_predicted, test.Survived, knn.27 )
 autoplot(knncm, type = "heatmap")
-SVM
+#SVM
 str(train)
 library(ROSE)
 #generate data synthetically
 #install.packages('ROSE')
 data.rose <- ROSE(Survived ~ ., data = train, seed = 1)$data
+
+install.packages('e1071')
+library(e1071)
 #selecting the parameters
-tune.out <- tune(svm, Survived~., data = data.rose, ranges = list(kernel
-                                                                  = c("linear", "polynomial", "radial", "sigmoid"), gamma = 2^(-1:1), cost
+tune.out <- tune(svm, Survived~., data = data.rose, ranges = list(kernel= c("linear", "polynomial", "radial", "sigmoid"), gamma = 2^(-1:1), cost
                                                                   = (0.001*10^(0:5))))
 summary(tune.out)
 # extract the best model
@@ -133,7 +148,11 @@ sum(diag(tab))/sum(tab)
 #Confusion matrix
 truth_predicted <- data.frame(test$Survived, pred.test)
 svmcm <- conf_mat(truth_predicted, test.Survived, pred.test)
-autoplot(svmcm, type = "heatmap")RF
+autoplot(svmcm, type = "heatmap")
+
+
+#RF
+install.packages('caret')
 library(caret)
 # Define the control
 trControl <- trainControl(method = "cv", number = 10, search = "grid")
@@ -151,6 +170,7 @@ print(rf_mtry)
 #storing the best mtry value
 best_mtry <- rf_mtry$bestTune$mtry
 tuneGrid <- expand.grid(.mtry = best_mtry)
+
 # Search the best maxnodes
 store_maxnode <- list()
 tuneGrid <- expand.grid(.mtry = best_mtry)
@@ -173,7 +193,8 @@ for (ntree in c(100, 250, 300, 350, 400, 450, 500, 550)) {
                          TRUE, nodesize = 14, maxnodes = 7, ntree = ntree)
   key <- toString(ntree)
   store_maxtrees[[key]] <- rf_maxtrees
-}results_tree <- resamples(store_maxtrees)
+}
+results_tree <- resamples(store_maxtrees)
 summary(results_tree)
 #final model
 fit_rf <- train(Survived~., data.rose, method = "rf", metric = "Accuracy"
@@ -186,12 +207,14 @@ confusionMatrix(prediction, test$Survived)
 truth_predicted <- data.frame(test$Survived, prediction)
 rfcm <- conf_mat(truth_predicted, test.Survived, prediction)
 autoplot(rfcm, type = "heatmap")
-Tree
+
+
+#Tree
+#install.packages('tree')
 library(tree)
 attach(train)
 #over and under sampling
-data_balanced_both <- ovun.sample(Survived ~ ., data = train, method = "b
-oth", p=0.5, N=989, seed = 1)$data
+data_balanced_both <- ovun.sample(Survived ~ ., data = train, method = "both", p=0.5, N=989, seed = 1)$data
 #building the model
 treeM = tree(Survived ~., data_balanced_both)
 summary(treeM)
@@ -204,15 +227,20 @@ sum(diag(tab))/sum(tab)
 #Confusion matrix
 truth_predicted <- data.frame(test$Survived, tree.pred)
 tcm <- conf_mat(truth_predicted, test.Survived, tree.pred)
-autoplot(tcm, type = "heatmap")ANN
+autoplot(tcm, type = "heatmap")
+
+
+
+#ANN
 estonia$Survived = as.numeric(estonia$Survived)
-estonia = subset(estonia, select = -c(PassengerId, Firstname, Lastname))
+#estonia = subset(estonia, select = -c(PassengerId, Firstname, Lastname))
 # Create Training Data and Test Data
 set.seed(100)
 samp = sample.int(n=nrow(estonia), size = floor(.7*nrow(estonia)), replace = F)
 train = estonia[samp,]
 test = estonia[-samp,]
 data.rose <- ROSE(Survived ~ ., data = train, seed = 1)$data
+install.packages('neuralnet')
 library(neuralnet)
 # 1-Hidden Layer, 1-neuron
 set.seed(100)
@@ -234,7 +262,8 @@ ANNM5<- neuralnet(model, data=data.rose, linear.output = FALSE, likelihood= TRUE
 # 2-Hidden Layer, 3-neuron
 set.seed(100)
 ANNM6<- neuralnet(model, data=data.rose, linear.output = FALSE, likelihood = TRUE, hidden = c(3,3))
-temp_test<- subset(test, select = c('Age', "Sex", 'Country', 'Category'))ANNM.results <- compute(ANNM3, temp_test)
+temp_test<- subset(test, select = c('Age', "Sex", 'Country', 'Category'))
+ANNM.results <- compute(ANNM3, temp_test)
 results <- data.frame(actual = test$Survived, prediction = ANNM.results$net.result)
 roundedresults<-sapply(results,round,digits=0)
 roundedresultsdf=data.frame(roundedresults)
@@ -242,9 +271,12 @@ roundedresultsdf=data.frame(roundedresults)
 attach(roundedresultsdf)
 print(tab<-table(actual, prediction))
 sum(diag(tab))/sum(tab)
+
 #Confusion matrix
 truth_predicted <- data.frame(test$Survived, roundedresultsdf$prediction)
 truth_predicted$test.Survived= as.factor(truth_predicted$test.Survived)
-truth_predicted$roundedresultsdf.prediction = as.factor(truth_predicted$roundedresultsdf.prediction)
+truth_predicted$roundedresultsdf.prediction = factor(truth_predicted$roundedresultsdf.prediction, levels=c(1,2))
+
+
 anncm <- conf_mat(truth_predicted, test.Survived, roundedresultsdf.prediction)
 autoplot(anncm, type = "heatmap")
