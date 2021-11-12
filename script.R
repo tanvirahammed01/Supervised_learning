@@ -2,6 +2,7 @@
 #Data Management and EDA
 #importing data into R
 rm(list=ls())
+
 #setwd("D:\\M2\\Mining\\Project\\archive")
 estonia <- read.csv("estonia-passenger-list.csv", header= T)
 str(estonia)
@@ -48,8 +49,7 @@ samp = sample.int(n=nrow(estonia), size = floor(.7*nrow(estonia)), replace = F)
 train = estonia[samp,]
 test = estonia[-samp,]
 #undersampling and oversampling on this imbalanced data
-data_balanced_both <- ovun.sample(Survived ~ ., data = train, method = "b
-oth", p=0.5, N=1000, seed = 1)$data
+data_balanced_both <- ovun.sample(Survived ~ ., data = train, method = "both", p=0.5, N=1000, seed = 1)$data
 #build logistic regression model
 lr.rose <- glm(Survived ~ ., data = data_balanced_both, family = binomial)
 #make predictions on unseen data
@@ -59,6 +59,7 @@ prediction = round(prediction, digits = 0)
 tab = table(test$Survived, prediction)
 sum(diag(tab))/sum(tab)
 #Confusion matrix
+#installed.packages('yardstic')
 library(yardstick)
 library(ggplot2)
 truth_predicted <- data.frame(test$Survived, prediction)
@@ -113,6 +114,7 @@ SVM
 str(train)
 library(ROSE)
 #generate data synthetically
+#install.packages('ROSE')
 data.rose <- ROSE(Survived ~ ., data = train, seed = 1)$data
 #selecting the parameters
 tune.out <- tune(svm, Survived~., data = data.rose, ranges = list(kernel
